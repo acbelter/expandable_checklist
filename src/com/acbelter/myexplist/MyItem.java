@@ -11,6 +11,7 @@ public class MyItem {
     public String text;
     public boolean checked;
     public List<MyItem> children;
+    public MyItem parent;
 
     public MyItem(Cursor cursor) {
         id = cursor.getLong(MyDatabaseHelper.INDEX_ID);
@@ -23,11 +24,65 @@ public class MyItem {
         } else if (checkedInt == 1) {
             checked = true;
         } else {
-            throw new IllegalArgumentException("Incorrect checked state");
+            throw new IllegalArgumentException("Incorrect checked state in the database");
         }
 
         if (parentId == -1) {
-            children = new ArrayList<MyItem>();
+            children = new ArrayList<MyItem>(5);
         }
+    }
+
+    public boolean isChild() {
+        return children == null;
+    }
+
+    public void setChecked(boolean isChecked) {
+        checked = isChecked;
+        if (isChild()) {
+            if (!isChecked && parent.checked) {
+                parent.checked = false;
+            } else if (isChecked && parent.isChildrenChecked())
+                parent.checked = true;
+        } else {
+            for (MyItem child : children) {
+                child.checked = isChecked;
+            }
+        }
+    }
+
+    private boolean isChildrenChecked() {
+        if (isChild()) {
+            throw new UnsupportedOperationException("This item must be group");
+        }
+
+        for (MyItem child : children) {
+            if (!child.checked) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("id=");
+        builder.append(id);
+        builder.append(" ");
+        builder.append("parentId=");
+        builder.append(parentId);
+        builder.append(" ");
+        builder.append("text=");
+        builder.append(text);
+        builder.append(" ");
+        builder.append("checked=");
+        builder.append(checked);
+        builder.append(" ");
+        if (!isChild()) {
+            builder.append("childrenSize=");
+            builder.append(children.size());
+            builder.append("\n");
+        }
+        return builder.toString();
     }
 }

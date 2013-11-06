@@ -1,9 +1,8 @@
 package com.acbelter.myexplist;
 
 import android.app.Activity;
-import android.content.ContentValues;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ExpandableListView;
 import com.acbelter.myexplist.R.layout;
 
@@ -14,6 +13,7 @@ public class MainActivity extends Activity {
     private MyDatabaseAdapter mDbAdapter;
     private ExpandableListView mListView;
     private MyExpandableListAdapter mListAdapter;
+    private static List<MyItem> sListData;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -38,9 +38,53 @@ public class MainActivity extends Activity {
             mDbAdapter.insert(parentId, "Item 9");
         }
 
-        List<MyItem> listData = mDbAdapter.getList();
-        mListAdapter = new MyExpandableListAdapter(this, listData);
+        if (sListData == null) {
+            sListData = mDbAdapter.getList();
+        }
+
+        mListAdapter = new MyExpandableListAdapter(this, sListData);
         mListView.setAdapter(mListAdapter);
+
+        mListView.setOnGroupClickListener(new ExpandableListView.OnGroupClickListener() {
+            @Override
+            public boolean onGroupClick(ExpandableListView parent, View v, int groupPosition, long id) {
+                int pos = parent.getFlatListPosition(ExpandableListView
+                        .getPackedPositionForGroup(groupPosition));
+                if (!parent.isGroupExpanded(groupPosition) && !parent.isItemChecked(pos)) {
+                    parent.expandGroup(groupPosition, true);
+                    parent.setItemChecked(pos, true);
+                } else if (parent.isGroupExpanded(groupPosition) && parent.isItemChecked(pos)) {
+                    parent.collapseGroup(groupPosition);
+                    parent.setItemChecked(pos, false);
+                } else if (parent.isGroupExpanded(groupPosition) && !parent.isItemChecked(pos)) {
+                    parent.setItemChecked(pos, true);
+                }
+                return true;
+            }
+        });
+
+        mListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
+            @Override
+            public boolean onChildClick(ExpandableListView parent, View v,
+                                        int groupPosition, int childPosition, long id) {
+                int pos = parent.getFlatListPosition(ExpandableListView
+                        .getPackedPositionForChild(groupPosition, childPosition));
+                if (parent.isItemChecked(pos)) {
+                    parent.setItemChecked(pos, false);
+                } else {
+                    parent.setItemChecked(pos, true);
+                }
+                return true;
+            }
+        });
+    }
+
+    public void onClickInsert(View view) {
+
+    }
+
+    public void onClickDelete(View view) {
+
     }
 
     @Override

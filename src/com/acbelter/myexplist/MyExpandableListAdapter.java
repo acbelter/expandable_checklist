@@ -1,6 +1,7 @@
 package com.acbelter.myexplist;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +16,7 @@ import com.acbelter.myexplist.R.layout;
 import java.util.List;
 
 public class MyExpandableListAdapter extends BaseExpandableListAdapter {
+    private static final String DEBUG_TAG = "DEBUG_TAG";
     private Context mContext;
     private List<MyItem> mListData;
 
@@ -77,7 +79,8 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
         checkBox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                item.checked = isChecked;
+                item.setChecked(isChecked);
+                notifyDataSetChanged();
             }
         });
         return convertView;
@@ -102,7 +105,8 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
         checkBox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                item.checked = isChecked;
+                item.setChecked(isChecked);
+                notifyDataSetChanged();
             }
         });
         return convertView;
@@ -111,5 +115,11 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
     @Override
     public boolean isChildSelectable(int groupPosition, int childPosition) {
         return true;
+    }
+
+    private void printData() {
+        for (MyItem item : mListData) {
+            Log.d(DEBUG_TAG, item.toString());
+        }
     }
 }

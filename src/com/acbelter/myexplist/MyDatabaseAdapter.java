@@ -59,6 +59,7 @@ public class MyDatabaseAdapter {
         for (MyItem group : groups) {
             for (MyItem child : children) {
                 if (child.parentId == group.id) {
+                    child.parent = group;
                     group.children.add(child);
                 }
             }
