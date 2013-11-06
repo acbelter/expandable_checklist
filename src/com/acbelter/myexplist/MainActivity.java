@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ExpandableListView;
 import com.acbelter.myexplist.R.layout;
+import com.acbelter.myexplist.database.MyDatabaseAdapter;
 
 import java.util.List;
 
@@ -80,11 +81,47 @@ public class MainActivity extends Activity {
     }
 
     public void onClickInsert(View view) {
-
+        int pos = mListView.getCheckedItemPosition();
+        long packedPos = mListView.getExpandableListPosition(pos);
+        if (ExpandableListView.getPackedPositionType(packedPos) ==
+                ExpandableListView.PACKED_POSITION_TYPE_NULL) {
+            // Add new group
+            MyItem newGroupItem = MyItem.newGroupItem("Group");
+            sListData.add(newGroupItem);
+            mListAdapter.notifyDataSetChanged();
+        } else if (ExpandableListView.getPackedPositionType(packedPos) ==
+                ExpandableListView.PACKED_POSITION_TYPE_GROUP) {
+            // Add new child
+            int groupPos = ExpandableListView.getPackedPositionGroup(packedPos);
+            MyItem parent = (MyItem) mListAdapter.getGroup(groupPos);
+            MyItem newChildItem = MyItem.newChildItem(parent, "Child");
+            parent.children.add(newChildItem);
+            if (parent.checked) {
+                parent.checked = false;
+            }
+            mListAdapter.notifyDataSetChanged();
+        }
     }
 
     public void onClickDelete(View view) {
-
+        int pos = mListView.getCheckedItemPosition();
+        long packedPos = mListView.getExpandableListPosition(pos);
+        if (ExpandableListView.getPackedPositionType(packedPos) ==
+                ExpandableListView.PACKED_POSITION_TYPE_GROUP) {
+            int groupPos = ExpandableListView.getPackedPositionGroup(packedPos);
+            // Next line prevents IndexOutOfBoundException when deleting the last element!
+            mListView.setItemChecked(mListView.getFlatListPosition(packedPos), false);
+            sListData.remove(groupPos);
+            mListAdapter.notifyDataSetChanged();
+        } else if (ExpandableListView.getPackedPositionType(packedPos) ==
+                ExpandableListView.PACKED_POSITION_TYPE_CHILD) {
+            int groupPos = ExpandableListView.getPackedPositionGroup(packedPos);
+            int childPos = ExpandableListView.getPackedPositionChild(packedPos);
+            // Next line prevents IndexOutOfBoundException when deleting the last element!
+            mListView.setItemChecked(mListView.getFlatListPosition(packedPos), false);
+            sListData.get(groupPos).children.remove(childPos);
+            mListAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override

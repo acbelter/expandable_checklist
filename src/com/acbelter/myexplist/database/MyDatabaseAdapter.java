@@ -1,9 +1,10 @@
-package com.acbelter.myexplist;
+package com.acbelter.myexplist.database;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import com.acbelter.myexplist.MyItem;
 
 import java.util.ArrayList;
 import java.util.List;

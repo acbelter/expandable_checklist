@@ -1,17 +1,43 @@
 package com.acbelter.myexplist;
 
 import android.database.Cursor;
+import com.acbelter.myexplist.database.MyDatabaseHelper;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MyItem {
+    // TODO Encapsulate fields
     public long id;
     public long parentId;
     public String text;
     public boolean checked;
     public List<MyItem> children;
     public MyItem parent;
+
+    public static MyItem newGroupItem(String text) {
+        MyItem item = new MyItem();
+        item.id = -1;
+        item.parentId = -1;
+        item.text = text;
+        item.checked = false;
+        item.children = new ArrayList<MyItem>(5);
+        item.parent = null;
+        return item;
+    }
+
+    public static MyItem newChildItem(MyItem parent, String text) {
+        MyItem item = new MyItem();
+        item.id = -1;
+        item.parentId = parent.id;
+        item.text = text;
+        item.checked = false;
+        item.children = null;
+        item.parent = parent;
+        return item;
+    }
+
+    public MyItem() {}
 
     public MyItem(Cursor cursor) {
         id = cursor.getLong(MyDatabaseHelper.INDEX_ID);
@@ -41,8 +67,9 @@ public class MyItem {
         if (isChild()) {
             if (!isChecked && parent.checked) {
                 parent.checked = false;
-            } else if (isChecked && parent.isChildrenChecked())
+            } else if (isChecked && parent.isChildrenChecked()) {
                 parent.checked = true;
+            }
         } else {
             for (MyItem child : children) {
                 child.checked = isChecked;

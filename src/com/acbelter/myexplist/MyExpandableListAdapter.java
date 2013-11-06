@@ -117,7 +117,7 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
         return true;
     }
 
-    private void printData() {
+    public void printData() {
         for (MyItem item : mListData) {
             Log.d(DEBUG_TAG, item.toString());
         }
