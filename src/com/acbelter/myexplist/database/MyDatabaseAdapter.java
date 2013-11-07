@@ -3,6 +3,7 @@ package com.acbelter.myexplist.database;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 import com.acbelter.myexplist.MyItem;
@@ -16,17 +17,31 @@ public class MyDatabaseAdapter {
     private static final String DEBUG_TAG = "DEBUG_TAG";
     private Context mContext;
     private SQLiteDatabase mDatabase;
-    private BlockingQueue<AsyncDbTask> mDbTasksQueue;
+    private static BlockingQueue<AsyncDbTask> mDbTasksQueue;
     private Thread mModifThread;
     private volatile boolean mModifThreadRun;
 
+    private static volatile MyDatabaseAdapter sInstance;
+
     private static long sMaxId;
 
-    public MyDatabaseAdapter(Context context) {
+    // FIXME Test this realization of singleton
+    public static MyDatabaseAdapter getInstance(Context context) {
+        if (sInstance == null) {
+            sInstance = new MyDatabaseAdapter(context.getApplicationContext());
+        }
+        return sInstance;
+    }
+
+    private MyDatabaseAdapter(Context context) {
         mContext = context;
     }
 
     public void runModificationThread() {
+        if (mModifThreadRun) {
+            return;
+        }
+
         mDbTasksQueue = new LinkedBlockingQueue<AsyncDbTask>();
         mModifThreadRun = true;
         mModifThread = new Thread(new Runnable() {
@@ -36,16 +51,43 @@ public class MyDatabaseAdapter {
                     try {
                         AsyncDbTask dbTask = mDbTasksQueue.take();
                         switch (dbTask.getType()) {
-                            case AsyncDbTask.UPDATE_TYPE: {
-                                // TODO
+                            case AsyncDbTask.TYPE_UPDATE: {
+                                mDatabase.beginTransaction();
+                                try {
+                                    ContentValues cv = newContentValues(dbTask.getContent());
+                                    int count = mDatabase.update("my_table", cv,
+                                            "_id=?", new String[]{String.valueOf(dbTask
+                                                    .getContent().id)});
+                                    assert (count == 1);
+                                    mDatabase.setTransactionSuccessful();
+                                } finally {
+                                    mDatabase.endTransaction();
+                                }
                                 break;
                             }
-                            case AsyncDbTask.INSERT_TYPE: {
-                                // TODO
+                            case AsyncDbTask.TYPE_INSERT: {
+                                mDatabase.beginTransaction();
+                                try {
+                                    ContentValues cv = newContentValues(dbTask.getContent());
+                                    long id = mDatabase.insert("my_table", null, cv);
+                                    assert (id == dbTask.getContent().id);
+                                    mDatabase.setTransactionSuccessful();
+                                } finally {
+                                    mDatabase.endTransaction();
+                                }
                                 break;
                             }
-                            case AsyncDbTask.DELETE_TYPE: {
-                                // TODO
+                            case AsyncDbTask.TYPE_DELETE: {
+                                mDatabase.beginTransaction();
+                                try {
+                                    int count = mDatabase.delete("my_table",
+                                            "_id=?", new String[]{String.valueOf(dbTask
+                                            .getContent().id)});
+                                    assert (count == 1);
+                                    mDatabase.setTransactionSuccessful();
+                                } finally {
+                                    mDatabase.endTransaction();
+                                }
                                 break;
                             }
                         }
@@ -64,8 +106,8 @@ public class MyDatabaseAdapter {
     }
 
     public boolean addModificationTask(AsyncDbTask newTask) {
-        if (mDbTasksQueue == null) {
-            throw new IllegalStateException("Modification thread not running");
+        if (mDbTasksQueue == null || !mModifThreadRun) {
+            throw new IllegalStateException("Modification thread isn't running");
         }
 
         return mDbTasksQueue.offer(newTask);
@@ -80,6 +122,7 @@ public class MyDatabaseAdapter {
     public void close() {
         if (mDatabase != null) {
             mDatabase.close();
+            stopModificationThread();
         }
     }
 
@@ -115,10 +158,21 @@ public class MyDatabaseAdapter {
         return values;
     }
 
+    private ContentValues newContentValues(MyItem item) {
+        ContentValues values = new ContentValues();
+        values.put("parent_id", item.parentId);
+        values.put("text", item.text);
+        values.put("checked", item.checked);
+        return values;
+    }
+
     public List<MyItem> getList() {
         List<MyItem> groups = new ArrayList<MyItem>();
         List<MyItem> children = new ArrayList<MyItem>();
         Cursor c = fetchAll();
+
+        //Log.d(DEBUG_TAG, DatabaseUtils.dumpCursorToString(c));
+
         while (c.moveToNext()) {
             MyItem item = new MyItem(c);
             if (item.parentId == -1) {

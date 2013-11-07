@@ -12,6 +12,8 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.TextView;
 import com.acbelter.myexplist.R.id;
 import com.acbelter.myexplist.R.layout;
+import com.acbelter.myexplist.database.AsyncDbTask;
+import com.acbelter.myexplist.database.MyDatabaseAdapter;
 
 import java.util.List;
 
@@ -79,7 +81,7 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
         checkBox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                item.setChecked(isChecked);
+                setChecked(item, isChecked);
                 notifyDataSetChanged();
             }
         });
@@ -105,7 +107,7 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
         checkBox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                item.setChecked(isChecked);
+                setChecked(item, isChecked);
                 notifyDataSetChanged();
             }
         });
@@ -115,6 +117,27 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
     @Override
     public boolean isChildSelectable(int groupPosition, int childPosition) {
         return true;
+    }
+
+    private void setChecked(MyItem item, boolean isChecked) {
+        item.checked = isChecked;
+        if (item.isChild()) {
+            if (!isChecked && item.parent.checked) {
+                item.parent.checked = false;
+                MyDatabaseAdapter.getInstance(mContext).addModificationTask(
+                        new AsyncDbTask(AsyncDbTask.TYPE_UPDATE, item.parent));
+            } else if (isChecked && item.parent.isChildrenChecked()) {
+                item.parent.checked = true;
+                MyDatabaseAdapter.getInstance(mContext).addModificationTask(
+                        new AsyncDbTask(AsyncDbTask.TYPE_UPDATE, item.parent));
+            }
+        } else {
+            for (MyItem child : item.children) {
+                child.checked = isChecked;
+                MyDatabaseAdapter.getInstance(mContext).addModificationTask(
+                        new AsyncDbTask(AsyncDbTask.TYPE_UPDATE, child));
+            }
+        }
     }
 
     public void printData() {

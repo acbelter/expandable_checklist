@@ -1,6 +1,7 @@
 package com.acbelter.myexplist;
 
 import android.database.Cursor;
+import com.acbelter.myexplist.database.AsyncDbTask;
 import com.acbelter.myexplist.database.MyDatabaseAdapter;
 import com.acbelter.myexplist.database.MyDatabaseHelper;
 
@@ -63,22 +64,7 @@ public class MyItem {
         return children == null;
     }
 
-    public void setChecked(boolean isChecked) {
-        checked = isChecked;
-        if (isChild()) {
-            if (!isChecked && parent.checked) {
-                parent.checked = false;
-            } else if (isChecked && parent.isChildrenChecked()) {
-                parent.checked = true;
-            }
-        } else {
-            for (MyItem child : children) {
-                child.checked = isChecked;
-            }
-        }
-    }
-
-    private boolean isChildrenChecked() {
+    public boolean isChildrenChecked() {
         if (isChild()) {
             throw new UnsupportedOperationException("This item must be group");
         }

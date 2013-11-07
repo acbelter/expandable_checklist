@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ExpandableListView;
 import com.acbelter.myexplist.R.layout;
+import com.acbelter.myexplist.database.AsyncDbTask;
 import com.acbelter.myexplist.database.MyDatabaseAdapter;
 
 import java.util.List;
@@ -23,7 +24,7 @@ public class MainActivity extends Activity {
         mListView = (ExpandableListView) findViewById(R.id.my_list);
         mListView.setChoiceMode(ExpandableListView.CHOICE_MODE_SINGLE);
 
-        mDbAdapter = new MyDatabaseAdapter(this);
+        mDbAdapter = MyDatabaseAdapter.getInstance(this);
         mDbAdapter.open();
 
         // Init if need
@@ -45,6 +46,7 @@ public class MainActivity extends Activity {
 
         mListAdapter = new MyExpandableListAdapter(this, sListData);
         mListView.setAdapter(mListAdapter);
+        mDbAdapter.runModificationThread();
 
         mListView.setOnGroupClickListener(new ExpandableListView.OnGroupClickListener() {
             @Override
@@ -88,7 +90,10 @@ public class MainActivity extends Activity {
             // Add new group
             MyItem newGroupItem = MyItem.newGroupItem("Group");
             sListData.add(newGroupItem);
+
             mListAdapter.notifyDataSetChanged();
+            MyDatabaseAdapter.getInstance(this).addModificationTask(
+                    new AsyncDbTask(AsyncDbTask.TYPE_INSERT, newGroupItem));
         } else if (ExpandableListView.getPackedPositionType(packedPos) ==
                 ExpandableListView.PACKED_POSITION_TYPE_GROUP) {
             // Add new child
@@ -99,7 +104,10 @@ public class MainActivity extends Activity {
             if (parent.checked) {
                 parent.checked = false;
             }
+
             mListAdapter.notifyDataSetChanged();
+            MyDatabaseAdapter.getInstance(this).addModificationTask(
+                    new AsyncDbTask(AsyncDbTask.TYPE_INSERT, newChildItem));
         }
     }
 
@@ -111,16 +119,27 @@ public class MainActivity extends Activity {
             int groupPos = ExpandableListView.getPackedPositionGroup(packedPos);
             // Next line prevents IndexOutOfBoundException when deleting the last element!
             mListView.setItemChecked(mListView.getFlatListPosition(packedPos), false);
-            sListData.remove(groupPos);
+
+            MyItem removedItem = sListData.remove(groupPos);
             mListAdapter.notifyDataSetChanged();
+            for (MyItem child : removedItem.children) {
+                MyDatabaseAdapter.getInstance(this).addModificationTask(
+                        new AsyncDbTask(AsyncDbTask.TYPE_DELETE, child));
+            }
+            MyDatabaseAdapter.getInstance(this).addModificationTask(
+                    new AsyncDbTask(AsyncDbTask.TYPE_DELETE, removedItem));
+
         } else if (ExpandableListView.getPackedPositionType(packedPos) ==
                 ExpandableListView.PACKED_POSITION_TYPE_CHILD) {
             int groupPos = ExpandableListView.getPackedPositionGroup(packedPos);
             int childPos = ExpandableListView.getPackedPositionChild(packedPos);
             // Next line prevents IndexOutOfBoundException when deleting the last element!
             mListView.setItemChecked(mListView.getFlatListPosition(packedPos), false);
-            sListData.get(groupPos).children.remove(childPos);
+
+            MyItem removedItem = sListData.get(groupPos).children.remove(childPos);
             mListAdapter.notifyDataSetChanged();
+            MyDatabaseAdapter.getInstance(this).addModificationTask(
+                    new AsyncDbTask(AsyncDbTask.TYPE_DELETE, removedItem));
         }
     }
 
