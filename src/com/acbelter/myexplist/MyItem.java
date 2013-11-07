@@ -1,6 +1,7 @@
 package com.acbelter.myexplist;
 
 import android.database.Cursor;
+import com.acbelter.myexplist.database.MyDatabaseAdapter;
 import com.acbelter.myexplist.database.MyDatabaseHelper;
 
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ public class MyItem {
 
     public static MyItem newGroupItem(String text) {
         MyItem item = new MyItem();
-        item.id = -1;
+        item.id = MyDatabaseAdapter.getNextId();
         item.parentId = -1;
         item.text = text;
         item.checked = false;
@@ -28,7 +29,7 @@ public class MyItem {
 
     public static MyItem newChildItem(MyItem parent, String text) {
         MyItem item = new MyItem();
-        item.id = -1;
+        item.id = MyDatabaseAdapter.getNextId();
         item.parentId = parent.id;
         item.text = text;
         item.checked = false;
